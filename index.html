@@ -155,36 +155,57 @@ async function runLottery() {
     }, 60);
 }
 
-async function finishDraw() {
+async function runLottery() {
+    if (isDrawing || !userProfile) return;
+    isDrawing = true;
+    
+    const btn = document.getElementById('draw-btn');
+    const display = document.getElementById('number-display');
+    btn.disabled = true;
+    btn.innerText = "好運降臨中...";
+
+    // --- 優化點：一開始就先去向 GAS 要號碼 ---
+    let finalResult = null;
+    const fetchPromise = fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({
+            userId: userProfile.userId,
+            userName: userProfile.displayName
+        })
+    }).then(res => res.json());
+
+    // 動畫跑動
+    let count = 0;
+    const timer = setInterval(async () => {
+        display.innerText = Math.floor(Math.random() * 24) + 1;
+        count++;
+
+        // 跑至少 30 次，且確保 GAS 已經回傳結果了才停止
+        if (count >= 30) {
+            if (!finalResult) {
+                // 如果 GAS 還沒跑完，就讓它繼續跳動（這叫「緩兵之計」）
+                finalResult = await fetchPromise.catch(() => ({ status: "error" }));
+            }
+            
+            clearInterval(timer);
+            processResult(finalResult); // 進入顯示結果的程序
+        }
+    }, 80);
+}
+
+// 將原本的結果處理邏輯拆出來
+function processResult(result) {
     const display = document.getElementById('number-display');
     const btn = document.getElementById('draw-btn');
     
-    try {
-        const response = await fetch(GAS_URL, {
-            method: "POST",
-            body: JSON.stringify({
-                userId: userProfile.userId,
-                userName: userProfile.displayName
-            })
-        });
-        
-        const result = await response.json();
-
-        if (result.status === "success") {
-            display.innerText = result.number;
-            display.style.color = "#d63031";
-            btn.innerText = "已完成抽籤，請等候公佈！";
-        } else {
-            alert(result.message);
-            display.innerText = "!";
-            btn.innerText = "抽籤結束";
-        }
-    } catch (e) {
-        console.error("傳送失敗", e);
-        alert("系統連線異常，請稍後再試！");
-        isDrawing = false;
-        btn.disabled = false;
-        btn.innerText = "重新抽籤";
+    if (result && result.status === "success") {
+        display.innerText = result.number;
+        display.style.color = "#d63031";
+        btn.innerText = "已完成抽籤，請等候公佈！";
+    } else {
+        alert(result ? result.message : "連線逾時");
+        display.innerText = "!";
+        btn.innerText = "抽籤結束";
     }
 }
 
@@ -192,5 +213,6 @@ initLIFF();
 </script>
 </body>
 </html>
+
 
 
