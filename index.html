@@ -6,31 +6,35 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://pony108live-oss.github.io/new-year-draw/">
     <meta property="og:image" content="https://raw.githubusercontent.com/pony108live-oss/new-year-draw/main/preview.jpg">
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2026 新年小禮物抽籤</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@500&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary-color: #ff9a9e; /* 溫柔粉 */
-            --accent-color: #fad0c4;  /* 溫柔橘 */
+            --primary-color: #ff9a9e;
+            --accent-color: #fad0c4;
             --text-color: #5d5d5d;
         }
 
+        /* 全螢幕漸層粉色背景 */
         body {
-    font-family: 'Noto Sans TC', 'Quicksand', sans-serif;
-    /* 這裡加入溫柔粉色背景 */
-    background: linear-gradient(135deg, #ffefef 0%, #ffe3e3 100%);
-    min-height: 100vh;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #ffefef 0%, #ffe3e3 100%) !important;
+            background-attachment: fixed;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
         .container {
             background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px); /* 磨砂玻璃效果 */
+            backdrop-filter: blur(10px);
             width: 85%;
             max-width: 380px;
             padding: 40px 20px;
@@ -49,7 +53,7 @@
         }
 
         h2 {
-            font-family: 'ZCOOL KuaiLe', cursive; /* 標題用較可愛的字體 */
+            font-family: 'ZCOOL KuaiLe', cursive;
             font-size: 28px;
             color: #ff7675;
             margin-top: 15px;
@@ -81,22 +85,10 @@
             box-shadow: 0 5px 15px rgba(255, 154, 158, 0.4);
         }
 
-        .btn:active {
-            transform: scale(0.95);
-        }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #dcdde1; cursor: not-allowed; box-shadow: none; }
 
-        .btn:disabled {
-            background: #dcdde1;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
-
-        .hint {
-            color: #a2a2a2;
-            font-size: 13px;
-            margin-top: 20px;
-            letter-spacing: 1px;
-        }
+        .hint { color: #a2a2a2; font-size: 13px; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -119,22 +111,19 @@
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
-    // --- 這裡要填寫你的資料 ---
 const LIFF_ID = "2008809071-dLtcXpov";
 const GAS_URL = "https://script.google.com/macros/s/AKfycbysMXdIYsVOzkj3ym6mo2meNcNgjMSqqvA6LJ2NNBtYGxwi8-q_JdEZQp-Ky15KqlDv/exec";
-// -----------------------
 
 let userProfile = null;
 let isDrawing = false;
 
-// 1. 初始化 LINE LIFF：確認是誰在抽獎
 async function initLIFF() {
     try {
         await liff.init({ liffId: LIFF_ID }); 
         if (!liff.isLoggedIn()) {
-            liff.login(); // 沒登入就要求登入
+            liff.login();
         } else {
-            userProfile = await liff.getProfile(); // 抓取頭像與名字
+            userProfile = await liff.getProfile();
             document.getElementById('user-profile').innerHTML = `
                 <img src="${userProfile.pictureUrl}" alt="profile">
                 <p>Hi <strong>${userProfile.displayName}</strong>，抽個好運吧！</p>
@@ -142,11 +131,9 @@ async function initLIFF() {
         }
     } catch (err) {
         console.error("LIFF 初始化失敗", err);
-        document.getElementById('user-profile').innerHTML = `<p style="font-size:12px">請從 LINE 開啟以載入個人化資訊</p>`;
     }
 }
 
-// 2. 按下按鈕後的動作
 async function runLottery() {
     if (isDrawing || !userProfile) return;
     isDrawing = true;
@@ -156,7 +143,6 @@ async function runLottery() {
     btn.disabled = true;
     btn.innerText = "好運降臨中...";
 
-    // 跑動動畫
     let count = 0;
     const totalSpins = 35; 
     const timer = setInterval(() => {
@@ -164,18 +150,16 @@ async function runLottery() {
         count++;
         if (count >= totalSpins) {
             clearInterval(timer);
-            finishDraw(); // 動畫跑完，決定最終號碼並傳給 Google
+            finishDraw(); 
         }
     }, 60);
 }
 
-// 3. 重點：決定結果並回傳 Google Sheets
 async function finishDraw() {
     const display = document.getElementById('number-display');
     const btn = document.getElementById('draw-btn');
     
     try {
-        // 向後端請求一個「尚未被抽走」的號碼
         const response = await fetch(GAS_URL, {
             method: "POST",
             body: JSON.stringify({
@@ -187,20 +171,10 @@ async function finishDraw() {
         const result = await response.json();
 
         if (result.status === "success") {
-            // 顯示後端配發的唯一號碼
-            const finalNumber = result.number;
-            display.innerText = finalNumber;
+            display.innerText = result.number;
             display.style.color = "#d63031";
-            
-            display.animate([
-                { transform: 'scale(1)' },
-                { transform: 'scale(1.3)' },
-                { transform: 'scale(1)' }
-            ], { duration: 500 });
-            
             btn.innerText = "已完成抽籤，請等候公佈！";
         } else {
-            // 如果重複抽或抽完了，顯示錯誤訊息
             alert(result.message);
             display.innerText = "!";
             btn.innerText = "抽籤結束";
@@ -216,11 +190,5 @@ async function finishDraw() {
 
 initLIFF();
 </script>
-
 </body>
 </html>
-
-
-
-
-
