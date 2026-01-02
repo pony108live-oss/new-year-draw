@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 新年小禮物抽籤</title>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff9a9e; /* 溫柔粉 */
+            --accent-color: #fad0c4;  /* 溫柔橘 */
+            --text-color: #5d5d5d;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', 'Quicksand', sans-serif;
+            /* 溫柔混色背景 */
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%), 
+                        linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+            background-blend-mode: screen;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px); /* 磨砂玻璃效果 */
+            width: 85%;
+            max-width: 380px;
+            padding: 40px 20px;
+            border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+            text-align: center;
+            border: 2px solid white;
+        }
+
+        .user-profile img {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            font-family: 'ZCOOL KuaiLe', cursive; /* 標題用較可愛的字體 */
+            font-size: 28px;
+            color: #ff7675;
+            margin-top: 15px;
+        }
+
+        .lucky-box {
+            margin: 40px 0;
+            min-height: 100px;
+        }
+
+        #number-display {
+            font-size: 80px;
+            font-weight: bold;
+            color: #fab1a0;
+            text-shadow: 2px 2px 0px #fff;
+        }
+
+        .btn {
+            background: linear-gradient(to right, #ff9a9e 0%, #fecfef 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 90%;
+            transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(255, 154, 158, 0.4);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn:disabled {
+            background: #dcdde1;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .hint {
+            color: #a2a2a2;
+            font-size: 13px;
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="user-profile" id="user-profile">
+        <div style="width:75px; height:75px; background:#f0f0f0; border-radius:50%; margin:auto;"></div>
+        <p>正在準備驚喜...</p>
+    </div>
+
+    <h2>✨ 2026新年小禮物 ✨</h2>
+    
+    <div class="lucky-box">
+        <div id="number-display">?</div>
+    </div>
+
+    <button id="draw-btn" class="btn" onclick="runLottery()">開始抽籤</button>
+    <p class="hint">每人限抽一次，祝你新年好運！</p>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+    // --- 這裡要填寫你的資料 ---
+const LIFF_ID = "2008809071"; //
+const GAS_URL = "https://script.google.com/macros/s/AKfycbysMXdIYsVOzkj3ym6mo2meNcNgjMSqqvA6LJ2NNBtYGxwi8-q_JdEZQp-Ky15KqlDv/exec"; //
+// -----------------------
+
+let userProfile = null;
+let isDrawing = false;
+
+// 1. 初始化 LINE LIFF：確認是誰在抽獎
+async function initLIFF() {
+    try {
+        await liff.init({ liffId: LIFF_ID }); 
+        if (!liff.isLoggedIn()) {
+            liff.login(); // 沒登入就要求登入
+        } else {
+            userProfile = await liff.getProfile(); // 抓取頭像與名字
+            document.getElementById('user-profile').innerHTML = `
+                <img src="${userProfile.pictureUrl}" alt="profile">
+                <p>Hi <strong>${userProfile.displayName}</strong>，抽個好運吧！</p>
+            `;
+        }
+    } catch (err) {
+        console.error("LIFF 初始化失敗", err);
+        document.getElementById('user-profile').innerHTML = `<p style="font-size:12px">請從 LINE 開啟以載入個人化資訊</p>`;
+    }
+}
+
+// 2. 按下按鈕後的動作
+async function runLottery() {
+    if (isDrawing || !userProfile) return;
+    isDrawing = true;
+    
+    const btn = document.getElementById('draw-btn');
+    const display = document.getElementById('number-display');
+    btn.disabled = true;
+    btn.innerText = "好運降臨中...";
+
+    // 跑動動畫
+    let count = 0;
+    const totalSpins = 35; 
+    const timer = setInterval(() => {
+        display.innerText = Math.floor(Math.random() * 24) + 1;
+        count++;
+        if (count >= totalSpins) {
+            clearInterval(timer);
+            finishDraw(); // 動畫跑完，決定最終號碼並傳給 Google
+        }
+    }, 60);
+}
+
+// 3. 重點：決定結果並回傳 Google Sheets
+async function finishDraw() {
+    const finalNumber = Math.floor(Math.random() * 24) + 1; // 產生結果
+    
+    // 這裡就像在發簡訊，把名字、ID、號碼傳給 Google 試算表
+    try {
+        const response = await fetch(GAS_URL, {
+            method: "POST",
+            mode: 'no-cors', // 避開跨網域問題
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                userId: userProfile.userId,
+                userName: userProfile.displayName,
+                resultNumber: finalNumber
+            })
+        });
+
+        // 顯示最後結果
+        const display = document.getElementById('number-display');
+        display.innerText = finalNumber;
+        display.style.color = "#d63031";
+        
+        // 增加一個震動效果
+        display.animate([
+            { transform: 'scale(1)' },
+            { transform: 'scale(1.3)' },
+            { transform: 'scale(1)' }
+        ], { duration: 500 });
+        
+        document.getElementById('draw-btn').innerText = "已完成抽籤，請等候公佈！";
+        
+    } catch (e) {
+        console.error("傳送失敗", e);
+        alert("網路連線有點問題，請再試一次！");
+        isDrawing = false;
+        document.getElementById('draw-btn').disabled = false;
+    }
+}
+
+initLIFF();
+</script>
+
+</body>
+</html>
